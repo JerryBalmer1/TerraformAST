@@ -1,3 +1,5 @@
+*.dll
+
 # Local .terraform directories
 .terraform/
 
