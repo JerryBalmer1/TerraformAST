@@ -51,7 +51,16 @@ $ENV:AZDO_ORG_SERVICE_URL="https://dev.azure.com/jlbalmerjr1"
 
 
 
+task Docker {
+    # docker buildx build -no-cache -f Dockerfile --output type=local,dest=./dist . 
+    # docker buildx build --no-cache --output type=local,dest=./src/PS.Util.Terraform/lib ./PS.Util.Terraform.dll
+    docker buildx build --no-cache --output type=local,dest=./src/PS.Util.Terraform/lib ./PS.Util.Terraform.dll
 
+    docker buildx build --no-cache -o ./src/PS.Util.Terraform/lib .
+    docker buildx build --no-cache --output type=local,dest=./PS.Util.Terraform.dll ./src/PS.Util.Terraform/lib 
+
+
+}
 
 
 # Define the build tasks

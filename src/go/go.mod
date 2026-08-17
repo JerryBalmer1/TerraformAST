@@ -1,6 +1,6 @@
 module hcl_parser
 
-go 1.24.0
+
 
 require (
 	github.com/agext/levenshtein v1.2.1 // indirect
