@@ -28,6 +28,15 @@ Register-ArgumentCompleter -CommandName Invoke-Build.ps1 -ParameterName File -Sc
 }
 
 ######################################################################################################
+# InvokeBuild - Install InvokeBuild
+######################################################################################################
+
+if (-not(Get-Module -ListAvailable -Name InvokeBuild)) {
+    Install-Module -Name InvokeBuild -Scope CurrentUser -Verbose -Force
+}
+
+
+######################################################################################################
 # InvokeBuild - Tasks
 ######################################################################################################
 

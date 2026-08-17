@@ -15,8 +15,7 @@ provider "azurerm" {
 }
 
 provider "azuredevops" {
-  #org_service_url = "https://dev.azure.com/jlbalmerjr1"
-  #personal_access_token = var.azure_devops_pat
+
 }
 
 resource "azuredevops_project" "example" {
@@ -32,11 +31,6 @@ resource "azuredevops_build_folder" "example" {
   description = "ExampleFolder description"
 }
 
-/*
-
-Your Mom....
-
-*/
 
 output "hello" {
   value = "asdf"
