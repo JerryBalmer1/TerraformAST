@@ -1,6 +1,7 @@
 [CmdletBinding()]
 Param()
 
+$global:BUILD_ROOT        = $PSScriptRoot
 $script:BUILD_MODULE_NAME = "PS.Util.Terraform"
 
 ######################################################################################################
@@ -44,19 +45,7 @@ if (-not(Get-Module -ListAvailable -Name InvokeBuild)) {
 
 
 
-task Clean {
-
-    Remove-Module -Name $script:BUILD_MODULE_NAME -Force -ErrorAction SilentlyContinue
-
-    $binPath = Join-Path $PSScriptRoot "bin"
-
-    if (Test-Path $binPath) {
-        Remove-Item $binPath -Force -ErrorAction Stop
-    }
-
-    New-Item -Path $binPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
-
-}
+task Clean {}
 
 
 task BuildDLL {
@@ -79,14 +68,18 @@ task BuildDLL {
 
 }
 
-task ImportModule Clean, {
-    $modulePath = Join-Path $PSScriptRoot "src\PS.Util.Terraform"
-    Import-Module $modulePath -Force -Verbose -ErrorAction Stop
+task RemoveModule {
+    Remove-Module -Name $script:BUILD_MODULE_NAME -Force -ErrorAction SilentlyContinue
 }
 
-task Test ImportModule, {
+task ImportModule {
+    $modulePath = Join-Path $PSScriptRoot "src\PS.Util.Terraform"
+    Import-Module $modulePath -Force -ErrorAction Stop
+}
 
-    Get-TerraformAST -Path "tests\example.tf" -Verbose -ErrorAction Stop
+task Test RemoveModule,ImportModule, {
+
+    Invoke-Pester -Output Detailed
 
 }
 
