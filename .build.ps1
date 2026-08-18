@@ -64,7 +64,7 @@ task BuildDLL {
     }
 
     if (Test-Path $libPath) {
-        Remove-Item -Path $libPath -Force -ErrorAction Stop | 
+        Remove-Item -Path $libPath -Force -ErrorAction Stop | Out-Null
     }
 
     docker build -t ps-util-terraform .
