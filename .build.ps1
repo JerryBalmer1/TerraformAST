@@ -1,6 +1,8 @@
 [CmdletBinding()]
 Param()
 
+$script:BUILD_MODULE_NAME = "PS.Util.Terraform"
+
 ######################################################################################################
 # InvokeBuild - ArgumentCompleters
 ######################################################################################################
@@ -40,16 +42,19 @@ if (-not(Get-Module -ListAvailable -Name InvokeBuild)) {
 # InvokeBuild - Tasks
 ######################################################################################################
 
-<#
 
-$pat = ""
-
-$ENV:AZDO_PERSONAL_ACCESS_TOKEN=$pat
-$ENV:AZDO_ORG_SERVICE_URL="https://dev.azure.com/jlbalmerjr1"
-
-#>
 
 task Clean {
+
+    Remove-Module -Name $script:BUILD_MODULE_NAME -Force -ErrorAction SilentlyContinue
+
+    $binPath = Join-Path $PSScriptRoot "bin"
+
+    if (Test-Path $binPath) {
+        Remove-Item $binPath -Force -ErrorAction Stop
+    }
+
+    New-Item -Path $binPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
 
 }
 
@@ -74,24 +79,14 @@ task BuildDLL {
 
 }
 
+task ImportModule Clean, {
+    $modulePath = Join-Path $PSScriptRoot "src\PS.Util.Terraform"
+    Import-Module $modulePath -Force -Verbose -ErrorAction Stop
+}
 
+task Test ImportModule, {
 
-task Clean {
-
-    Remove-Module -Name TerraformAst -Force -ErrorAction SilentlyContinue
-
-    # Remove the DLL from the TerraformAST directory
-    $dllPath = Join-Path "$PSScriptRoot/TerraformAST" "hcl_parser.dll"
-    if (Test-Path $dllPath) {
-        Remove-Item $dllPath -Force
-        Write-Host "DLL removed from the TerraformAST directory." -ForegroundColor Green
-    } else {
-        Write-Host "DLL not found in the TerraformAST directory." -ForegroundColor Yellow
-    }
-
-    if (Test-Path "bin") {
-        Write-Host "bin"
-    }
+    Get-TerraformAST -Path "tests\example.tf" -Verbose -ErrorAction Stop
 
 }
 
@@ -103,33 +98,8 @@ task Package {
     Write-Host "Module packaged successfully: $zipPath" -ForegroundColor Green
 }
 
-task ImportModule {
 
-    $module = [System.IO.DirectoryInfo](Join-Path $PSScriptRoot 'TerraformAST')
 
-    Remove-Module -Name $module.Name -ErrorAction SilentlyContinue
-
-    Import-Module $module.FullName -Verbose -Force
-
-    Get-Command -Module TerraformAST
-
-}
-
-task Test ImportModule, {
-
-    Get-TFConfig
-
-    $params = @{
-        WorkingDirectory = ".\tests"
-    }
-    
-    Set-TFConfig @params
-
-    Get-TFConfig
-
-    Invoke-TFInit
-
-}
 
 # Default task (runs if no task is specified)
-task . ImportModule
+task . Test

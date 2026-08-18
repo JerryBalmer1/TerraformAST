@@ -1,5 +1,5 @@
 # Load the Go DLL using P/Invoke
-$dllPath = Join-Path $PSScriptRoot "lib\PS.Util.Terraform.psm1"
+$dllPath = Join-Path $PSScriptRoot "lib\PS.Util.Terraform.dll"
 if (-not (Test-Path $dllPath)) {
     throw "DLL not found: $dllPath"
 }
@@ -16,11 +16,15 @@ $signature = @"
     public static extern void FreeString(IntPtr str);
 "@
 
-try {
-    # Add the type definition
+# Add the type definition
+
+$typeName = 'Go.HCLParser'
+
+$assemblies    = [AppDomain]::CurrentDomain.GetAssemblies() | ForEach-Object { $_.GetTypes() }
+$alreadyLoaded = $assemblies | Where-Object { $_.FullName -eq $typeName }
+
+if (-not $alreadyLoaded) {
     Add-Type -MemberDefinition $signature -Name HCLParser -Namespace Go
-} catch {
-    throw "Failed to define Go function: $_"
 }
 
 function Get-TerraformAST {
@@ -30,7 +34,7 @@ function Get-TerraformAST {
             Mandatory,
             ValueFromPipeline,
             ValueFromPipelineByPropertyName,
-            HelpMessage = "The path to the Terraform file to parse."
+            HelpMessage = "The path to the Terraform file (.tf) to parse."
         )]
         [Alias("FullName")]
         [String]
@@ -40,11 +44,6 @@ function Get-TerraformAST {
     BEGIN {
 
         Write-Verbose "[ $($MyInvocation.InvocationName) ] Executing"
-
-        if (-not(Get-Command -Name terraform.exe -ErrorAction SilentlyContinue)) {
-            Write-Error "Terraform is not installed!"
-            return
-        }
 
     }
 

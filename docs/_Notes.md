@@ -26,4 +26,11 @@ task BuildDLL {
 
 
 
+<#
 
+$pat = ""
+
+$ENV:AZDO_PERSONAL_ACCESS_TOKEN=$pat
+$ENV:AZDO_ORG_SERVICE_URL="https://dev.azure.com/jlbalmerjr1"
+
+#>
