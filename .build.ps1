@@ -49,36 +49,32 @@ $ENV:AZDO_ORG_SERVICE_URL="https://dev.azure.com/jlbalmerjr1"
 
 #>
 
-
-
-task Docker {
-    # docker buildx build -no-cache -f Dockerfile --output type=local,dest=./dist . 
-    # docker buildx build --no-cache --output type=local,dest=./src/PS.Util.Terraform/lib ./PS.Util.Terraform.dll
-    docker buildx build --no-cache --output type=local,dest=./src/PS.Util.Terraform/lib ./PS.Util.Terraform.dll
-
-    docker buildx build --no-cache -o ./src/PS.Util.Terraform/lib .
-    docker buildx build --no-cache --output type=local,dest=./PS.Util.Terraform.dll ./src/PS.Util.Terraform/lib 
-
+task Clean {
 
 }
 
 
-# Define the build tasks
-task BuildDll Clean, {
-    # Navigate to the Go directory
-    Set-Location "$PSScriptRoot/go"
+task BuildDLL {
 
-    # Build the Go code into a DLL
-    go build -o "$PSScriptRoot/TerraformAST/hcl_parser.dll" -buildmode=c-shared .
+    $libDirectory = Join-Path $PSScriptRoot "src\PS.Util.Terraform\lib"
+    $libPath      = Join-Path $libDirectory "PS.Util.Terraform.dll"
 
-    # Verify the DLL was created
-    $dllPath = Join-Path "$PSScriptRoot/TerraformAST" "hcl_parser.dll"
-    if (Test-Path $dllPath) {
-        Write-Host "DLL built successfully and placed in the TerraformAST directory: $dllPath" -ForegroundColor Green
-    } else {
-        Write-Host "Failed to build the DLL. Check the Go build output for errors." -ForegroundColor Red
+    if (-not(Test-Path $libDirectory)) {
+        New-Item -Path $libDirectory -ItemType Directory -Force -ErrorAction Stop | Out-Null
     }
+
+    if (Test-Path $libPath) {
+        Remove-Item -Path $libPath -Force -ErrorAction Stop | 
+    }
+
+    docker build -t ps-util-terraform .
+    docker create --name psutiltmp ps-util-terraform
+    docker cp psutiltmp:/PS.Util.Terraform.dll $libPath
+    docker rm psutiltmp
+
 }
+
+
 
 task Clean {
 

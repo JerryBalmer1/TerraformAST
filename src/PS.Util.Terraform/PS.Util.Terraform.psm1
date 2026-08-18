@@ -1,5 +1,5 @@
 # Load the Go DLL using P/Invoke
-$dllPath = Join-Path $PSScriptRoot "hcl_parser.dll"
+$dllPath = Join-Path $PSScriptRoot "lib\PS.Util.Terraform.psm1"
 if (-not (Test-Path $dllPath)) {
     throw "DLL not found: $dllPath"
 }
