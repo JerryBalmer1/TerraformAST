@@ -98,7 +98,18 @@ task ImportModule {
 
 task Test RemoveModule,ImportModule, {
 
-    Invoke-Pester -Output Detailed
+    $pesterPath = Join-Path $PSScriptRoot "tests"
+    $testFiles  = Get-ChildItem -Path $pesterPath -Filter "*.Tests.ps1" -Recurse -ErrorAction SilentlyContinue
+
+    if (-not $testFiles) {
+        throw "No *.Tests.ps1 files found under $pesterPath"
+    }
+
+    $result = Invoke-Pester -Path $pesterPath -Output Detailed -PassThru
+
+    if ($result.FailedCount -gt 0) {
+        throw "Pester failed $($result.FailedCount) test(s)"
+    }
 
 }
 
