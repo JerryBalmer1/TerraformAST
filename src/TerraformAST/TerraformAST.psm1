@@ -1,30 +1,24 @@
-# Load the Go DLL using P/Invoke
 $dllPath = Join-Path $PSScriptRoot "lib\TerraformAST.dll"
 if (-not (Test-Path $dllPath)) {
     throw "DLL not found: $dllPath"
 }
 
-# Escape backslashes in the file path
-$escapedDllPath = $dllPath -replace '\\', '\\'
-
-# Define the signatures of the Go functions
+# Verbatim C# string so Windows backslashes are not treated as escapes.
 $signature = @"
-    [DllImport("$escapedDllPath", EntryPoint = "ParseHCL", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr ParseHCL(IntPtr filePath);
+    [DllImport(@"$dllPath", EntryPoint = "ParseHCL", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr ParseHCL(string filePath);
 
-    [DllImport("$escapedDllPath", EntryPoint = "FreeString", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport(@"$dllPath", EntryPoint = "FreeString", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     public static extern void FreeString(IntPtr str);
 "@
 
-# Add the type definition
-
-$typeName = 'Go.HCLParser'
-
-$assemblies    = [AppDomain]::CurrentDomain.GetAssemblies() | ForEach-Object { $_.GetTypes() }
-$alreadyLoaded = $assemblies | Where-Object { $_.FullName -eq $typeName }
+$typeName = 'TerraformAST.HCLParser'
+$alreadyLoaded = [AppDomain]::CurrentDomain.GetAssemblies() |
+    ForEach-Object { try { $_.GetType($typeName, $false, $false) } catch { $null } } |
+    Where-Object { $_ }
 
 if (-not $alreadyLoaded) {
-    Add-Type -MemberDefinition $signature -Name HCLParser -Namespace Go
+    Add-Type -MemberDefinition $signature -Name HCLParser -Namespace TerraformAST
 }
 
 function Get-TerraformAST {
@@ -40,109 +34,76 @@ function Get-TerraformAST {
         [Alias("FullName")]
         [String]
         $Path
-        
+
     )
 
     BEGIN {
-
         Write-Verbose "[ $($MyInvocation.InvocationName) ] Executing"
-
     }
 
     PROCESS {
 
-        if (-not(Test-Path -Path $Path -PathType Leaf)) {
-            Write-Error "The -Path $($Path) does not exist!"
+        if (-not (Test-Path -Path $Path -PathType Leaf)) {
+            Write-Error "The -Path $Path does not exist!"
             return
         }
 
-        if (-not(([System.IO.FileInfo]$Path).Extension -eq ".tf")) {
-            Write-Error "The -Path $($Path) file extension is not .tf"
+        if (-not (([System.IO.FileInfo]$Path).Extension -eq ".tf")) {
+            Write-Error "The -Path $Path file extension is not .tf"
             return
         }
-
-        # Resolve the absolute path (cross-platform)
 
         $absPath = try {
-
-            Resolve-Path $Path -ErrorAction Stop | Select-Object -ExpandProperty Path
-
+            (Resolve-Path $Path -ErrorAction Stop).Path
         } catch {
-
             Write-Error $_.Exception.Message
             return
-
         }
 
-        Write-Verbose " - $($absPath)"
-        
-        # Call the Go function to parse the HCL file
-        
+        Write-Verbose " - $absPath"
+
         try {
+            $astJsonPtr = [TerraformAST.HCLParser]::ParseHCL($absPath)
 
-            $pathPtr = [System.Runtime.InteropServices.Marshal]::StringToHGlobalAnsi($absPath)
-
-            try {
-
-                $astJsonPtr = [Go.HCLParser]::ParseHCL($pathPtr)
-
-                if ($astJsonPtr -eq [IntPtr]::Zero) {
-                    throw "Failed to parse HCL file: Null pointer returned"
-                }
-
-                # Convert the returned pointer to a PowerShell string
-                $astJson = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($astJsonPtr)
-
-                if (-not $astJson) {
-                    throw "Failed to convert AST JSON to string"
-                }
-
-                # Free the memory allocated by Go
-                [Go.HCLParser]::FreeString($astJsonPtr)
-
-            } finally {
-
-                [System.Runtime.InteropServices.Marshal]::FreeHGlobal($pathPtr)
-
+            if ($astJsonPtr -eq [IntPtr]::Zero) {
+                throw "Failed to parse HCL file: Null pointer returned"
             }
 
-            # Convert the JSON string to a PowerShell object and pretty-print it
+            try {
+                $astJson = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($astJsonPtr)
+            }
+            finally {
+                [TerraformAST.HCLParser]::FreeString($astJsonPtr)
+            }
+
+            if (-not $astJson) {
+                throw "Failed to convert AST JSON to string"
+            }
+
+            if ($astJson.StartsWith("Error ")) {
+                throw $astJson
+            }
 
             $ast = try {
-
                 if ($PSVersionTable.PSVersion.Major -gt 5) {
                     $astJson | ConvertFrom-Json -Depth 99 -ErrorAction Stop
                 }
                 else {
                     $astJson | ConvertFrom-Json -ErrorAction Stop
                 }
-                
             } catch {
                 Write-Error $_.Exception.Message
                 return
             }
 
-            $ast.Body.Blocks | ForEach-Object {
-                $_
-            }
-
+            $ast.Body.Blocks | ForEach-Object { $_ }
         }
         catch {
-
             throw "Error in Get-TerraformAST: $_"
-
         }
-
     }
 
     END {
-
         Write-Verbose "[ $($MyInvocation.InvocationName) ] Executing"
-
     }
-
 }
-
-
-
-
