@@ -6,29 +6,29 @@
 
 @{
 
-RootModule        = 'TerraformAST.psm1'
-ModuleVersion     = '1.0.1'
-GUID              = '2d0b1461-c90f-421d-9c12-a3ed0486f0f9'
-Author            = 'Jerry Balmer'
-CompanyName       = 'Jerry Balmer'
-Copyright         = '(c) Jerry Balmer. All rights reserved.'
-Description       = 'Parse Terraform .tf files into an HCL abstract syntax tree from PowerShell. Requires PowerShell 7.4+ so agents can treat errors as terminating.'
-PowerShellVersion = '7.4'
+    RootModule        = 'TerraformAST.psm1'
+    ModuleVersion     = '1.0.1'
+    GUID              = '2d0b1461-c90f-421d-9c12-a3ed0486f0f9'
+    Author            = 'Jerry Balmer'
+    CompanyName       = 'Jerry Balmer'
+    Copyright         = '(c) Jerry Balmer. All rights reserved.'
+    Description       = 'Parse Terraform .tf files into an HCL abstract syntax tree from PowerShell. Requires PowerShell 7.4+ so agents can treat errors as terminating.'
+    PowerShellVersion = '7.4'
 
-FunctionsToExport = @('Get-TerraformAST')
-CmdletsToExport   = @()
-VariablesToExport = @()
-AliasesToExport   = @()
+    FunctionsToExport = @('Get-TerraformAST')
+    CmdletsToExport   = @()
+    VariablesToExport = @()
+    AliasesToExport   = @()
 
-PrivateData = @{
-    PSData = @{
-        Tags                       = @('Terraform', 'HCL', 'AST', 'InfrastructureAsCode', 'PowerShell74')
-        ProjectUri                 = 'https://github.com/JerryBalmer1/TerraformAST'
-        LicenseUri                 = 'https://github.com/JerryBalmer1/TerraformAST'
-        ReleaseNotes               = 'Requires PowerShell 7.4+. Parse .tf files or directories. Native parser built from HashiCorp HCL v2.'
-        RequireLicenseAcceptance   = $false
-        ExternalModuleDependencies = @()
+    PrivateData = @{
+        PSData = @{
+            Tags                       = @('Terraform', 'HCL', 'AST', 'InfrastructureAsCode', 'PowerShell74')
+            ProjectUri                 = 'https://github.com/JerryBalmer1/TerraformAST'
+            LicenseUri                 = 'https://github.com/JerryBalmer1/TerraformAST'
+            ReleaseNotes               = 'Requires PowerShell 7.4+. Parse .tf files or directories. Native parser built from HashiCorp HCL v2.'
+            RequireLicenseAcceptance   = $false
+            ExternalModuleDependencies = @()
+        }
     }
-}
 
 }
