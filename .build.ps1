@@ -61,10 +61,29 @@ task BuildDLL {
         Remove-Item -Path $libPath -Force -ErrorAction Stop | Out-Null
     }
 
+    docker rm -f psutiltmp 2>$null | Out-Null
+
     docker build -t ps-util-terraform .
+    if ($LASTEXITCODE -ne 0) {
+        throw "docker build failed with exit code $LASTEXITCODE"
+    }
+
     docker create --name psutiltmp ps-util-terraform
+    if ($LASTEXITCODE -ne 0) {
+        throw "docker create failed with exit code $LASTEXITCODE"
+    }
+
     docker cp psutiltmp:/TerraformAST.dll $libPath
+    if ($LASTEXITCODE -ne 0) {
+        docker rm -f psutiltmp 2>$null | Out-Null
+        throw "docker cp failed with exit code $LASTEXITCODE"
+    }
+
     docker rm psutiltmp
+
+    if (-not (Test-Path $libPath)) {
+        throw "BuildDLL did not produce $libPath"
+    }
 
 }
 
@@ -86,7 +105,7 @@ task Test RemoveModule,ImportModule, {
 task Package {
     # Create a zip file of the TerraformAST directory
     $zipPath = Join-Path $PSScriptRoot "TerraformAST.zip"
-    Compress-Archive -Path "$PSScriptRoot/TerraformAST/*" -DestinationPath $zipPath -Force
+    Compress-Archive -Path "$PSScriptRoot/src/TerraformAST/*" -DestinationPath $zipPath -Force
 
     Write-Host "Module packaged successfully: $zipPath" -ForegroundColor Green
 }

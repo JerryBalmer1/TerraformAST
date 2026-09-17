@@ -18,11 +18,11 @@ RUN mkdir -p /root/.config/powershell && \
     echo '$env:GOOS="windows"' >> /root/.config/powershell/Microsoft.PowerShell_profile.ps1 && \
     echo '$env:CC="x86_64-w64-mingw32-gcc"' >> /root/.config/powershell/Microsoft.PowerShell_profile.ps1
 
-RUN mkdir -p /out && \
+RUN mkdir -p /app/src/TerraformAST/lib && \
     cd ./src/go && \
     sed -i '/^go /d' go.mod && \
     go mod tidy && \
-    go build -o "/app/src/TerraformASTrraform.dll" -buildmode=c-shared .
+    go build -o "/app/src/TerraformAST/lib/TerraformAST.dll" -buildmode=c-shared .
 
 FROM mcr.microsoft.com/powershell:latest
 
