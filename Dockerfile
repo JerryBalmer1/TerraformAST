@@ -22,11 +22,11 @@ RUN mkdir -p /out && \
     cd ./src/go && \
     sed -i '/^go /d' go.mod && \
     go mod tidy && \
-    go build -o "/app/src/PS.Util.Terraform/lib/PS.Util.Terraform.dll" -buildmode=c-shared .
+    go build -o "/app/src/TerraformASTrraform.dll" -buildmode=c-shared .
 
 FROM mcr.microsoft.com/powershell:latest
 
-COPY --from=builder /app/src/PS.Util.Terraform/lib/PS.Util.Terraform.dll /PS.Util.Terraform.dll
+COPY --from=builder /app/src/TerraformAST/lib/TerraformAST.dll /TerraformAST.dll
 
 ENTRYPOINT ["pwsh"]
 

@@ -2,7 +2,7 @@
 Param()
 
 $global:BUILD_ROOT        = $PSScriptRoot
-$script:BUILD_MODULE_NAME = "PS.Util.Terraform"
+$script:BUILD_MODULE_NAME = "TerraformAST"
 
 ######################################################################################################
 # InvokeBuild - ArgumentCompleters
@@ -50,8 +50,8 @@ task Clean {}
 
 task BuildDLL {
 
-    $libDirectory = Join-Path $PSScriptRoot "src\PS.Util.Terraform\lib"
-    $libPath      = Join-Path $libDirectory "PS.Util.Terraform.dll"
+    $libDirectory = Join-Path $PSScriptRoot "src\TerraformAST\lib"
+    $libPath      = Join-Path $libDirectory "TerraformAST.dll"
 
     if (-not(Test-Path $libDirectory)) {
         New-Item -Path $libDirectory -ItemType Directory -Force -ErrorAction Stop | Out-Null
@@ -63,7 +63,7 @@ task BuildDLL {
 
     docker build -t ps-util-terraform .
     docker create --name psutiltmp ps-util-terraform
-    docker cp psutiltmp:/PS.Util.Terraform.dll $libPath
+    docker cp psutiltmp:/TerraformAST.dll $libPath
     docker rm psutiltmp
 
 }
@@ -73,7 +73,7 @@ task RemoveModule {
 }
 
 task ImportModule {
-    $modulePath = Join-Path $PSScriptRoot "src\PS.Util.Terraform"
+    $modulePath = Join-Path $PSScriptRoot "src\TerraformAST"
     Import-Module $modulePath -Force -ErrorAction Stop
 }
 
