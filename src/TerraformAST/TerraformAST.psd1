@@ -14,6 +14,9 @@
     VariablesToExport = @()
     AliasesToExport   = @()
 
+    # ExternalModuleDependencies is PowerShell *modules* only (names Install-Module
+    # would resolve). terraform.exe is a native binary, not a module, and this
+    # parser does not call it — HCL is loaded from TerraformAST.dll.
     PrivateData = @{
         PSData = @{
             Tags                       = @('Terraform', 'HCL', 'AST', 'InfrastructureAsCode', 'PowerShell74')
