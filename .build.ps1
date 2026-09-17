@@ -1,9 +1,6 @@
 [CmdletBinding()]
 Param()
 
-$global:BUILD_ROOT        = $PSScriptRoot
-$script:BUILD_MODULE_NAME = "TerraformAST"
-
 ######################################################################################################
 # InvokeBuild - ArgumentCompleters
 ######################################################################################################
@@ -34,26 +31,22 @@ Register-ArgumentCompleter -CommandName Invoke-Build.ps1 -ParameterName File -Sc
 # InvokeBuild - Install InvokeBuild
 ######################################################################################################
 
-if (-not(Get-Module -ListAvailable -Name InvokeBuild)) {
+if (-not (Get-Module -ListAvailable -Name InvokeBuild)) {
     Install-Module -Name InvokeBuild -Scope CurrentUser -Verbose -Force
 }
-
 
 ######################################################################################################
 # InvokeBuild - Tasks
 ######################################################################################################
 
-
-
 task Clean {}
-
 
 task BuildDLL {
 
     $libDirectory = Join-Path $PSScriptRoot "src\TerraformAST\lib"
     $libPath      = Join-Path $libDirectory "TerraformAST.dll"
 
-    if (-not(Test-Path $libDirectory)) {
+    if (-not (Test-Path $libDirectory)) {
         New-Item -Path $libDirectory -ItemType Directory -Force -ErrorAction Stop | Out-Null
     }
 
@@ -88,7 +81,7 @@ task BuildDLL {
 }
 
 task RemoveModule {
-    Remove-Module -Name $script:BUILD_MODULE_NAME -Force -ErrorAction SilentlyContinue
+    Remove-Module -Name TerraformAST -Force -ErrorAction SilentlyContinue
 }
 
 task ImportModule {
@@ -114,15 +107,9 @@ task Test RemoveModule,ImportModule, {
 }
 
 task Package {
-    # Create a zip file of the TerraformAST directory
     $zipPath = Join-Path $PSScriptRoot "TerraformAST.zip"
     Compress-Archive -Path "$PSScriptRoot/src/TerraformAST/*" -DestinationPath $zipPath -Force
-
     Write-Host "Module packaged successfully: $zipPath" -ForegroundColor Green
 }
 
-
-
-
-# Default task (runs if no task is specified)
 task . Test

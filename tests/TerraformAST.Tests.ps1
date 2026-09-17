@@ -1,8 +1,10 @@
 Describe "TerraformAST" {
 
     BeforeAll {
-        $script:RepoRoot = Split-Path $PSScriptRoot -Parent
-        $script:Fixture  = Join-Path $script:RepoRoot "test.tf"
+        $repoRoot = Split-Path $PSScriptRoot -Parent
+        $fixture  = Join-Path $repoRoot "test.tf"
+        Set-Variable -Name RepoRoot -Value $repoRoot -Scope Script
+        Set-Variable -Name Fixture  -Value $fixture  -Scope Script
     }
 
     Context "Get-TerraformAST" {
@@ -11,18 +13,33 @@ Describe "TerraformAST" {
             Get-Command Get-TerraformAST -ErrorAction Stop | Should -Not -BeNullOrEmpty
         }
 
-        It "parses test.tf" {
-            $ast = Get-TerraformAST -Path $script:Fixture -ErrorAction Stop
+        It "parses a file with -FilePath" {
+            $ast = Get-TerraformAST -FilePath $Fixture -ErrorAction Stop
+            $ast | Should -Not -BeNullOrEmpty
+        }
+
+        It "parses a directory with -Path" {
+            $ast = Get-TerraformAST -Path $RepoRoot -ErrorAction Stop
+            $ast | Should -Not -BeNullOrEmpty
+        }
+
+        It "parses a directory with -Path -Recurse" {
+            $ast = Get-TerraformAST -Path $RepoRoot -Recurse -ErrorAction Stop
             $ast | Should -Not -BeNullOrEmpty
         }
 
         It "rejects a missing file" {
-            { Get-TerraformAST -Path (Join-Path $script:RepoRoot "does-not-exist.tf") -ErrorAction Stop } |
+            { Get-TerraformAST -FilePath (Join-Path $RepoRoot "does-not-exist.tf") -ErrorAction Stop } |
                 Should -Throw
         }
 
-        It "rejects a non-.tf path" {
-            { Get-TerraformAST -Path $PSCommandPath -ErrorAction Stop } |
+        It "rejects a non-.tf FilePath" {
+            { Get-TerraformAST -FilePath $PSCommandPath -ErrorAction Stop } |
+                Should -Throw
+        }
+
+        It "rejects a missing directory" {
+            { Get-TerraformAST -Path (Join-Path $RepoRoot "does-not-exist-dir") -ErrorAction Stop } |
                 Should -Throw
         }
 
