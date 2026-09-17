@@ -50,8 +50,19 @@ task BuildDLL {
         New-Item -Path $libDirectory -ItemType Directory -Force -ErrorAction Stop | Out-Null
     }
 
-    if (Test-Path $libPath) {
-        Remove-Item -Path $libPath -Force -ErrorAction Stop | Out-Null
+    Remove-Module -Name TerraformAST -Force -ErrorAction SilentlyContinue
+
+    if (Test-Path -LiteralPath $libPath) {
+        try {
+            Remove-Item -LiteralPath $libPath -Force -ErrorAction Stop
+        }
+        catch {
+            $stale = "$libPath.old"
+            if (Test-Path -LiteralPath $stale) {
+                Remove-Item -LiteralPath $stale -Force -ErrorAction SilentlyContinue
+            }
+            Move-Item -LiteralPath $libPath -Destination $stale -Force -ErrorAction Stop
+        }
     }
 
     docker rm -f psutiltmp 2>$null | Out-Null
@@ -74,7 +85,7 @@ task BuildDLL {
 
     docker rm psutiltmp
 
-    if (-not (Test-Path $libPath)) {
+    if (-not (Test-Path -LiteralPath $libPath)) {
         throw "BuildDLL did not produce $libPath"
     }
 
