@@ -1,4 +1,13 @@
-# TerraformAST
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=220&section=header&color=0:1B1030,45:5C4EE5,100:844FBA&text=TerraformAST&fontSize=52&fontColor=FFFFFF&fontAlignY=38&desc=Parse%20.tf%20files%20into%20an%20HCL%20abstract%20syntax%20tree&descSize=16&descAlignY=62&animation=fadeIn" alt="TerraformAST" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/PowerShell-7.4%2B-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell 7.4+" />
+  <img src="https://img.shields.io/badge/Pester-6.1%2B-0078D4?style=for-the-badge" alt="Pester 6.1+" />
+  <img src="https://img.shields.io/badge/HCL-v2-844FBA?style=for-the-badge" alt="HashiCorp HCL v2" />
+  <a href="https://www.powershellgallery.com/packages/TerraformAST"><img src="https://img.shields.io/powershellgallery/v/TerraformAST?style=for-the-badge&label=Gallery" alt="PowerShell Gallery" /></a>
+</p>
 
 PowerShell module that parses Terraform `.tf` files into an HCL abstract syntax tree.
 
@@ -117,3 +126,7 @@ Invoke-Build
 ## Disclaimer
 
 This project is independent. It is not affiliated with HashiCorp.
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:844FBA,55:5C4EE5,100:1B1030&text=Get-TerraformAST&fontSize=28&fontColor=FFFFFF&fontAlignY=70&animation=fadeIn" alt="" />
+</p>
