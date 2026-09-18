@@ -13,20 +13,21 @@ WORKDIR /app
 
 COPY . .
 
-RUN mkdir -p /root/.config/powershell && \
-    echo '$env:CGO_ENABLED="1"' >> /root/.config/powershell/Microsoft.PowerShell_profile.ps1 && \
-    echo '$env:GOOS="windows"' >> /root/.config/powershell/Microsoft.PowerShell_profile.ps1 && \
-    echo '$env:CC="x86_64-w64-mingw32-gcc"' >> /root/.config/powershell/Microsoft.PowerShell_profile.ps1
+ENV CGO_ENABLED=1 \
+    GOOS=windows \
+    GOARCH=amd64 \
+    CC=x86_64-w64-mingw32-gcc \
+    CXX=x86_64-w64-mingw32-g++
 
-RUN mkdir -p /out && \
+RUN mkdir -p /app/src/TerraformAST/lib && \
     cd ./src/go && \
     sed -i '/^go /d' go.mod && \
     go mod tidy && \
-    go build -o "/app/src/PS.Util.Terraform/lib/PS.Util.Terraform.dll" -buildmode=c-shared .
+    go build -o "/app/src/TerraformAST/lib/TerraformAST.dll" -buildmode=c-shared .
 
 FROM mcr.microsoft.com/powershell:latest
 
-COPY --from=builder /app/src/PS.Util.Terraform/lib/PS.Util.Terraform.dll /PS.Util.Terraform.dll
+COPY --from=builder /app/src/TerraformAST/lib/TerraformAST.dll /TerraformAST.dll
 
 ENTRYPOINT ["pwsh"]
 
