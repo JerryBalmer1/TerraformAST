@@ -36,6 +36,76 @@ if (-not (Get-Module -ListAvailable -Name InvokeBuild)) {
 }
 
 ######################################################################################################
+# Helpers
+######################################################################################################
+
+function Get-RepoBranch {
+    $name = git rev-parse --abbrev-ref HEAD 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $name) {
+        throw "Not a git repository (or git is not on PATH)."
+    }
+    $name.Trim()
+}
+
+function Assert-GitClean {
+    $status = git status --porcelain
+    if ($LASTEXITCODE -ne 0) {
+        throw "git status failed."
+    }
+    if ($status) {
+        throw "Working tree is not clean. Commit or stash first.`n$status"
+    }
+}
+
+function Invoke-Git {
+    param(
+        [Parameter(Mandatory)]
+        [string[]]
+        $Arguments
+    )
+    & git @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "git $($Arguments -join ' ') failed with exit code $LASTEXITCODE"
+    }
+}
+
+function Get-ModuleManifestPath {
+    Join-Path $PSScriptRoot "src\TerraformAST\TerraformAST.psd1"
+}
+
+function Get-ManifestVersion {
+    $manifestPath = Get-ModuleManifestPath
+    $data = Import-PowerShellDataFile -Path $manifestPath
+    [version]$data.ModuleVersion
+}
+
+function Get-NextBuildVersion {
+    $current = Get-ManifestVersion
+    $build = if ($current.Build -lt 0) { 0 } else { $current.Build }
+    [version]::new($current.Major, $current.Minor, $build + 1)
+}
+
+function Set-ManifestVersion {
+    param(
+        [Parameter(Mandatory)]
+        [version]
+        $Version
+    )
+    $manifestPath = Get-ModuleManifestPath
+    $text = Get-Content -LiteralPath $manifestPath -Raw -ErrorAction Stop
+    $updated = [regex]::Replace(
+        $text,
+        "(ModuleVersion\s*=\s*')([^']+)(')",
+        { param($m) $m.Groups[1].Value + $Version.ToString() + $m.Groups[3].Value },
+        1
+    )
+    if ($updated -eq $text) {
+        throw "Could not find ModuleVersion in $manifestPath"
+    }
+    Set-Content -LiteralPath $manifestPath -Value $updated -NoNewline -ErrorAction Stop
+}
+
+######################################################################################################
 # InvokeBuild - Tasks
 ######################################################################################################
 
@@ -188,6 +258,72 @@ task Package {
     $zipPath = Join-Path $PSScriptRoot "TerraformAST.zip"
     Compress-Archive -Path "$PSScriptRoot/src/TerraformAST/*" -DestinationPath $zipPath -Force
     Write-Host "Module packaged successfully: $zipPath" -ForegroundColor Green
+}
+
+# develop only. Bump ModuleVersion build, squash develop onto main, annotated tag, push.
+task Release {
+
+    $branch = Get-RepoBranch
+    if ($branch -ne 'develop') {
+        throw "Release must run on develop. Current branch is '$branch'."
+    }
+
+    Assert-GitClean
+    Invoke-Git fetch, origin
+
+    $current = Get-ManifestVersion
+    $next    = Get-NextBuildVersion
+    Write-Host "Bumping ModuleVersion $current -> $next" -ForegroundColor Cyan
+
+    Set-ManifestVersion -Version $next
+    Invoke-Git add, (Get-ModuleManifestPath)
+    Invoke-Git commit, -m, "Bump version to $next"
+
+    Invoke-Git checkout, main
+    Invoke-Git pull, origin, main
+    Invoke-Git merge, --squash, develop
+    Invoke-Git commit, -m, "Release $next"
+    Invoke-Git tag, -a, $next.ToString(), -m, "Release $next"
+    Invoke-Git push, origin, main
+    Invoke-Git push, origin, $next.ToString()
+
+    Invoke-Git checkout, develop
+    Invoke-Git merge, main, -m, "Sync develop with release $next"
+    Invoke-Git push, origin, develop
+
+    Write-Host "Release $next is on main (annotated tag $next). Checkout main and Invoke-Build Publish." -ForegroundColor Green
+}
+
+# main only. Prompt for a Gallery key if needed, then Publish-Module.
+task Publish {
+
+    $branch = Get-RepoBranch
+    if ($branch -ne 'main') {
+        throw "Publish must run on main. Current branch is '$branch'. Checkout main after Release."
+    }
+
+    $libPath = Join-Path $PSScriptRoot "src\TerraformAST\lib\TerraformAST.dll"
+    if (-not (Test-Path -LiteralPath $libPath)) {
+        throw "TerraformAST.dll is missing. Run Invoke-Build BuildDLL before Publish (the DLL is gitignored)."
+    }
+
+    if (-not $env:PSGALLERY_API_KEY) {
+        $secure = Read-Host "PowerShell Gallery API key" -AsSecureString
+        if (-not $secure -or $secure.Length -eq 0) {
+            throw "A PowerShell Gallery API key is required."
+        }
+        $env:PSGALLERY_API_KEY = [System.Net.NetworkCredential]::new('', $secure).Password
+        Write-Host "PSGALLERY_API_KEY is set for this process only." -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "Using existing PSGALLERY_API_KEY from the environment." -ForegroundColor Yellow
+    }
+
+    $modulePath = Join-Path $PSScriptRoot "src\TerraformAST"
+    $version    = Get-ManifestVersion
+
+    Publish-Module -Path $modulePath -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -ErrorAction Stop
+    Write-Host "Published TerraformAST $version to the PowerShell Gallery." -ForegroundColor Green
 }
 
 task . Test
