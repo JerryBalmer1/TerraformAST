@@ -109,6 +109,8 @@ task BuildDLL CheckDependencies, {
 
     $libDirectory = Join-Path $PSScriptRoot "src\TerraformAST\lib"
     $libPath      = Join-Path $libDirectory "TerraformAST.dll"
+    $imageName    = "terraformast"
+    $containerName = "terraformast-tmp"
 
     if (-not (Test-Path $libDirectory)) {
         New-Item -Path $libDirectory -ItemType Directory -Force -ErrorAction Stop | Out-Null
@@ -129,25 +131,26 @@ task BuildDLL CheckDependencies, {
         }
     }
 
+    docker rm -f $containerName 2>$null | Out-Null
     docker rm -f psutiltmp 2>$null | Out-Null
 
-    docker build -t ps-util-terraform .
+    docker build -t $imageName .
     if ($LASTEXITCODE -ne 0) {
         throw "docker build failed with exit code $LASTEXITCODE"
     }
 
-    docker create --name psutiltmp ps-util-terraform
+    docker create --name $containerName $imageName
     if ($LASTEXITCODE -ne 0) {
         throw "docker create failed with exit code $LASTEXITCODE"
     }
 
-    docker cp psutiltmp:/TerraformAST.dll $libPath
+    docker cp "${containerName}:/TerraformAST.dll" $libPath
     if ($LASTEXITCODE -ne 0) {
-        docker rm -f psutiltmp 2>$null | Out-Null
+        docker rm -f $containerName 2>$null | Out-Null
         throw "docker cp failed with exit code $LASTEXITCODE"
     }
 
-    docker rm psutiltmp
+    docker rm $containerName
 
     if (-not (Test-Path -LiteralPath $libPath)) {
         throw "BuildDLL did not produce $libPath"
