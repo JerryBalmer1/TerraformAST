@@ -57,10 +57,20 @@ The repo ships an `infra/` fixture: a root module, a `network` child module, and
 
 ### Directory (`-Path`)
 
-Parse `.tf` files in one folder. Subfolders are skipped.
+Parse `.tf` files in one folder. Subfolders are skipped. The default view is `Type`, `Name`, `Line`, `Column`, and `File` — set with `DefaultDisplayPropertySet` on `TerraformAST.Block`.
 
 ```powershell
 Get-TerraformAST -Path .\infra
+```
+
+```text
+Type      Name                 Line Column File
+----      ----                 ---- ------ ----
+terraform                         1      1 main.tf
+provider  null                    1      1 main.tf
+variable  aws_region              1      1 variables.tf
+variable  instance_count          7      1 variables.tf
+output    region                  1      1 outputs.tf
 ```
 
 ### Directory, recursive (`-Path -Recurse`)
@@ -77,18 +87,22 @@ Get-TerraformAST -Path .\infra -Recurse
 Get-TerraformAST -FilePath .\infra\main.tf
 ```
 
-### Shape of a variable block
+### Full object
 
-Each pipeline object is one HCL block from HashiCorp HCL v2. Besides `Type` and `Labels`, the object keeps the source map: file name, line, column, and byte offset on the type, each label, and both braces.
+Ranges and `Body` are still on the object. `Format-List *` is the long view:
 
 ```powershell
 Get-TerraformAST -FilePath .\infra\variables.tf |
-    Where-Object { $_.Type -eq 'variable' -and $_.Labels -contains 'aws_region' } |
+    Where-Object Name -eq 'aws_region' |
     Select-Object -First 1 |
     Format-List *
 ```
 
 ```text
+Name            : aws_region
+Line            : 1
+Column          : 1
+File            : variables.tf
 Type            : variable
 Labels          : {aws_region}
 Body            : @{Attributes=System.Collections.Hashtable; Blocks=System.Object[]}
@@ -98,50 +112,9 @@ OpenBraceRange  : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; 
 CloseBraceRange : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}
 ```
 
-`Format-List` collapses nested range objects. Pull the coordinates off the properties:
+`$block.TypeRange.Start.Line` is the same value as `$block.Line`. Types at the root of `.\infra`:
 
 ```powershell
-$block = Get-TerraformAST -FilePath .\infra\variables.tf |
-    Where-Object { $_.Type -eq 'variable' -and $_.Labels -contains 'aws_region' } |
-    Select-Object -First 1
-
-$block.TypeRange.Start | Format-List Line, Column, Byte
-$block.TypeRange.End   | Format-List Line, Column, Byte
-```
-
-```text
-Line   : 1
-Column : 1
-Byte   : 0
-
-Line   : 1
-Column : 9
-Byte   : 8
-```
-
-`variable` on line 1 of `infra/variables.tf` is columns 1–8; the label `aws_region` is in `$block.LabelRanges[0]`. Same pattern on every block type (`resource`, `module`, `output`, …): **`Type`**, **`Labels`**, **`Body`**, plus **`TypeRange` / `LabelRanges` / `OpenBraceRange` / `CloseBraceRange`**.
-
-```powershell
-# Line of every root block under .\infra
-Get-TerraformAST -Path .\infra |
-    Select-Object Type,
-                  @{ n = 'Name'; l = { $_.Labels -join '.' } },
-                  @{ n = 'Line'; l = { $_.TypeRange.Start.Line } },
-                  @{ n = 'File'; l = { Split-Path $_.TypeRange.Filename -Leaf } }
-```
-
-```text
-Type      Name              Line File
-----      ----              ---- ----
-terraform                      1 main.tf
-provider  null                 1 main.tf
-variable  aws_region           1 variables.tf
-variable  instance_count       7 variables.tf
-output    region               1 outputs.tf
-```
-
-```powershell
-# Types present at the root of .\infra (no -Recurse)
 Get-TerraformAST -Path .\infra |
     Select-Object -ExpandProperty Type -Unique
 ```

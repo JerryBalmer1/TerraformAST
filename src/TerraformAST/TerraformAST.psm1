@@ -20,6 +20,31 @@ if (-not $alreadyLoaded) {
     Add-Type -MemberDefinition $signature -Name HCLParser -Namespace TerraformAST
 }
 
+# Default view: Type, Name, Line, Column, File.
+# Everything else is still on the object — use Format-List * or Select-Object *.
+$blockTypeName = 'TerraformAST.Block'
+Update-TypeData -TypeName $blockTypeName -DefaultDisplayPropertySet Type, Name, Line, Column, File -Force
+Update-TypeData -TypeName $blockTypeName -MemberType ScriptProperty -MemberName Name -Value {
+    if ($this.Labels) { $this.Labels -join '.' }
+} -Force
+Update-TypeData -TypeName $blockTypeName -MemberType ScriptProperty -MemberName Line -Value {
+    $this.TypeRange.Start.Line
+} -Force
+Update-TypeData -TypeName $blockTypeName -MemberType ScriptProperty -MemberName Column -Value {
+    $this.TypeRange.Start.Column
+} -Force
+Update-TypeData -TypeName $blockTypeName -MemberType ScriptProperty -MemberName File -Value {
+    if ($this.TypeRange.Filename) {
+        Split-Path -Path $this.TypeRange.Filename -Leaf
+    }
+} -Force
+
+function ConvertTo-TerraformAstBlock {
+    param($Block)
+    $Block.PSObject.TypeNames.Insert(0, 'TerraformAST.Block')
+    $Block
+}
+
 function ConvertFrom-TerraformHclFile {
     <#
     .SYNOPSIS
@@ -48,7 +73,8 @@ function ConvertFrom-TerraformHclFile {
         Public wrapper that validates the path, then calls this function.
 
     .OUTPUTS
-        PSCustomObject. Each object is one HCL block with Type, Labels, and Body.
+        TerraformAST.Block. Default view is Type, Name, Line, Column, File.
+        TypeRange, LabelRanges, Body, and brace ranges remain on the object.
 
     .NOTES
         Not exported. Get-TerraformAST is the supported entry point.
@@ -97,7 +123,7 @@ function ConvertFrom-TerraformHclFile {
         $ast = $astJson | ConvertFrom-Json -ErrorAction Stop
     }
 
-    $ast.Body.Blocks | ForEach-Object { $_ }
+    $ast.Body.Blocks | ForEach-Object { ConvertTo-TerraformAstBlock -Block $_ }
 }
 
 function Get-TerraformAST {
@@ -112,6 +138,9 @@ function Get-TerraformAST {
 
         Use -FilePath for a single .tf file. Use -Path for a directory. Add -Recurse
         to include .tf files in subdirectories.
+
+        Default display is Type, Name, Line, Column, and File. Source ranges and Body
+        stay on the object; use Format-List * when you need the full tree.
 
     .PARAMETER Path
         Directory that contains Terraform .tf files.
@@ -141,6 +170,9 @@ function Get-TerraformAST {
         Get-ChildItem .\infra -Filter *.tf | Get-TerraformAST
 
         Pipeline input binds to -FilePath via the FullName alias.
+
+    .OUTPUTS
+        TerraformAST.Block
 
     .LINK
         https://github.com/JerryBalmer1/TerraformAST
