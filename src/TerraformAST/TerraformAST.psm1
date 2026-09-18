@@ -21,6 +21,45 @@ if (-not $alreadyLoaded) {
 }
 
 function ConvertFrom-TerraformHclFile {
+    <#
+    .SYNOPSIS
+        Parses one Terraform .tf file through the native HCL DLL and emits its blocks.
+
+    .DESCRIPTION
+        ConvertFrom-TerraformHclFile is the single-file parser used by Get-TerraformAST.
+        It resolves a literal path, calls ParseHCL on TerraformAST.dll (HashiCorp HCL v2),
+        converts the JSON payload to objects, and writes each top-level block from
+        Body.Blocks to the pipeline.
+
+        Prefer Get-TerraformAST for directories, recursion, and validation. This function
+        assumes the path already exists.
+
+    .PARAMETER LiteralPath
+        Full or relative path to a single .tf file. Wildcards are not expanded.
+
+    .EXAMPLE
+        ConvertFrom-TerraformHclFile -LiteralPath .\infra\variables.tf
+
+        Parse one file and emit its HCL blocks.
+
+    .EXAMPLE
+        Get-TerraformAST -FilePath .\infra\main.tf
+
+        Public wrapper that validates the path, then calls this function.
+
+    .OUTPUTS
+        PSCustomObject. Each object is one HCL block with Type, Labels, and Body.
+
+    .NOTES
+        Not exported. Get-TerraformAST is the supported entry point.
+        Parse failures throw so a 7.4+ agent with ErrorAction Stop can correct them.
+
+    .LINK
+        Get-TerraformAST
+
+    .LINK
+        https://github.com/JerryBalmer1/TerraformAST
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
