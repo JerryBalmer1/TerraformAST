@@ -79,10 +79,53 @@ function Get-ManifestVersion {
     [version]$data.ModuleVersion
 }
 
+function Get-LatestReleaseTag {
+    $raw = git tag --list 2>$null
+    if (-not $raw) {
+        return $null
+    }
+    $versions = foreach ($tag in @($raw)) {
+        $name = $tag.Trim()
+        if ($name -match '^v?(\d+\.\d+\.\d+)$') {
+            [version]$Matches[1]
+        }
+    }
+    if (-not $versions) {
+        return $null
+    }
+    $versions | Sort-Object | Select-Object -Last 1
+}
+
 function Get-NextBuildVersion {
-    $current = Get-ManifestVersion
-    $build = if ($current.Build -lt 0) { 0 } else { $current.Build }
-    [version]::new($current.Major, $current.Minor, $build + 1)
+    param(
+        [Parameter(Mandatory)]
+        [version]
+        $From
+    )
+    $build = if ($From.Build -lt 0) { 0 } else { $From.Build }
+    [version]::new($From.Major, $From.Minor, $build + 1)
+}
+
+function Resolve-ReleaseVersion {
+    $manifest = Get-ManifestVersion
+    $latest   = Get-LatestReleaseTag
+
+    if (-not $latest) {
+        Write-Host "No version tags yet. Releasing manifest version $manifest as-is." -ForegroundColor Cyan
+        return [pscustomobject]@{ Version = $manifest; Bump = $false }
+    }
+
+    if ($manifest -gt $latest) {
+        Write-Host "Manifest $manifest is already ahead of tag $latest. Releasing as-is." -ForegroundColor Cyan
+        return [pscustomobject]@{ Version = $manifest; Bump = $false }
+    }
+
+    $next = Get-NextBuildVersion -From $manifest
+    if ($next -le $latest) {
+        $next = Get-NextBuildVersion -From $latest
+    }
+    Write-Host "Bumping ModuleVersion $manifest -> $next (latest tag $latest)" -ForegroundColor Cyan
+    return [pscustomobject]@{ Version = $next; Bump = $true }
 }
 
 function Set-ManifestVersion {
@@ -260,7 +303,8 @@ task Package {
     Write-Host "Module packaged successfully: $zipPath" -ForegroundColor Green
 }
 
-# develop only. Bump ModuleVersion build, squash develop onto main, annotated tag, push.
+# develop only. Squash onto main, annotated tag, push. Bumps build only when the
+# manifest is not already ahead of the latest version tag.
 task Release {
 
     $branch = Get-RepoBranch
@@ -269,29 +313,30 @@ task Release {
     }
 
     Assert-GitClean
-    Invoke-Git fetch, origin
+    Invoke-Git fetch, origin, '--tags'
 
-    $current = Get-ManifestVersion
-    $next    = Get-NextBuildVersion
-    Write-Host "Bumping ModuleVersion $current -> $next" -ForegroundColor Cyan
+    $plan    = Resolve-ReleaseVersion
+    $version = $plan.Version
 
-    Set-ManifestVersion -Version $next
-    Invoke-Git add, (Get-ModuleManifestPath)
-    Invoke-Git commit, -m, "Bump version to $next"
+    if ($plan.Bump) {
+        Set-ManifestVersion -Version $version
+        Invoke-Git add, (Get-ModuleManifestPath)
+        Invoke-Git commit, -m, "Bump version to $version"
+    }
 
     Invoke-Git checkout, main
     Invoke-Git pull, origin, main
     Invoke-Git merge, --squash, develop
-    Invoke-Git commit, -m, "Release $next"
-    Invoke-Git tag, -a, $next.ToString(), -m, "Release $next"
+    Invoke-Git commit, -m, "Release $version"
+    Invoke-Git tag, -a, $version.ToString(), -m, "Release $version"
     Invoke-Git push, origin, main
-    Invoke-Git push, origin, $next.ToString()
+    Invoke-Git push, origin, $version.ToString()
 
     Invoke-Git checkout, develop
-    Invoke-Git merge, main, -m, "Sync develop with release $next"
+    Invoke-Git merge, main, -m, "Sync develop with release $version"
     Invoke-Git push, origin, develop
 
-    Write-Host "Release $next is on main (annotated tag $next). Checkout main and Invoke-Build Publish." -ForegroundColor Green
+    Write-Host "Release $version is on main (annotated tag $version). Checkout main, BuildDLL, then Publish." -ForegroundColor Green
 }
 
 # main only. Prompt for a Gallery key if needed, then Publish-Module.
@@ -302,10 +347,14 @@ task Publish {
         throw "Publish must run on main. Current branch is '$branch'. Checkout main after Release."
     }
 
-    $libPath = Join-Path $PSScriptRoot "src\TerraformAST\lib\TerraformAST.dll"
+    $libDir  = Join-Path $PSScriptRoot "src\TerraformAST\lib"
+    $libPath = Join-Path $libDir "TerraformAST.dll"
     if (-not (Test-Path -LiteralPath $libPath)) {
         throw "TerraformAST.dll is missing. Run Invoke-Build BuildDLL before Publish (the DLL is gitignored)."
     }
+
+    Get-ChildItem -LiteralPath $libDir -Filter '*.old' -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
 
     if (-not $env:PSGALLERY_API_KEY) {
         $secure = Read-Host "PowerShell Gallery API key" -AsSecureString
