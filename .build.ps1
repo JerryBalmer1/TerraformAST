@@ -55,6 +55,20 @@ task CheckDependencies {
         Write-Host "OK  PowerShell $psVersion" -ForegroundColor Green
     }
 
+    $minPester = [version]'6.1.0'
+    $pesterMod = Get-Module -ListAvailable -Name Pester |
+        Sort-Object Version -Descending |
+        Select-Object -First 1
+    if (-not $pesterMod) {
+        $failures.Add("Pester $minPester+ is required. Install-Module Pester -MinimumVersion 6.1.0 -Scope CurrentUser -Force")
+    }
+    elseif ($pesterMod.Version -lt $minPester) {
+        $failures.Add("Pester $($pesterMod.Version) is installed; $minPester or later is required. Update-Module Pester -Force")
+    }
+    else {
+        Write-Host "OK  Pester $($pesterMod.Version)" -ForegroundColor Green
+    }
+
     $terraform = Get-Command terraform -ErrorAction SilentlyContinue
     if (-not $terraform) {
         $failures.Add("terraform is not on PATH. Install Terraform and ensure `terraform version` works.")
