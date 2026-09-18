@@ -6,7 +6,7 @@ PowerShell module that parses Terraform `.tf` files into an HCL abstract syntax 
 
 There was no Terraform AST cmdlet I could drop into a pipeline, so this module exists. The native parser is a `c-shared` DLL built from [HashiCorp HCL v2](https://github.com/hashicorp/hcl) — the same language library Terraform uses — not from the `hashicorp/terraform` application repository.
 
-Published on the PowerShell Gallery: [TerraformAST 1.0.1](https://www.powershellgallery.com/packages/TerraformAST/1.0.1)
+Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` file). Gallery listing still at [TerraformAST 1.0.1](https://www.powershellgallery.com/packages/TerraformAST/1.0.1) until 2.0.0 is published.
 
 ---
 
@@ -24,9 +24,9 @@ Published on the PowerShell Gallery: [TerraformAST 1.0.1](https://www.powershell
 
 ## Downloads & Links
 
-- [Get the latest build](https://www.powershellgallery.com/packages/TerraformAST/1.0.1)
+- [Get the latest published build](https://www.powershellgallery.com/packages/TerraformAST/1.0.1)
 - Homepage: https://github.com/JerryBalmer1/TerraformAST
-- Gallery: https://www.powershellgallery.com/packages/TerraformAST/1.0.1
+- Gallery: https://www.powershellgallery.com/packages/TerraformAST
 - Parser library: https://github.com/hashicorp/hcl
 
 ---
@@ -107,6 +107,7 @@ check
 If `TerraformAST.dll` is already loaded in this PowerShell process, Windows will refuse to delete it. `BuildDLL` unloads the module first and, if the file is still locked, renames it to `TerraformAST.dll.old` before writing the new one. A brand-new `pwsh` session is still the cleanest option.
 
 ```powershell
+Invoke-Build CheckDependencies
 Invoke-Build BuildDLL
 Invoke-Build
 ```

@@ -1,7 +1,7 @@
 @{
 
     RootModule        = 'TerraformAST.psm1'
-    ModuleVersion     = '1.0.1'
+    ModuleVersion     = '2.0.0'
     GUID              = '2d0b1461-c90f-421d-9c12-a3ed0486f0f9'
     Author            = 'Jerry Balmer'
     CompanyName       = 'Jerry Balmer'
@@ -22,7 +22,7 @@
             Tags                       = @('Terraform', 'HCL', 'AST', 'InfrastructureAsCode', 'PowerShell74')
             ProjectUri                 = 'https://github.com/JerryBalmer1/TerraformAST'
             LicenseUri                 = 'https://github.com/JerryBalmer1/TerraformAST'
-            ReleaseNotes               = 'Requires PowerShell 7.4+. Parse .tf files or directories. Native parser built from HashiCorp HCL v2.'
+            ReleaseNotes               = '2.0.0: Breaking. -Path is a directory; use -FilePath for a single .tf file. Requires PowerShell 7.4+. Native parser built from HashiCorp HCL v2.'
             RequireLicenseAcceptance   = $false
             ExternalModuleDependencies = @()
         }
