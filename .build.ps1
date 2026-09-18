@@ -41,7 +41,59 @@ if (-not (Get-Module -ListAvailable -Name InvokeBuild)) {
 
 task Clean {}
 
-task BuildDLL {
+# Runs at most once per Invoke-Build invocation. Later tasks that list it as a
+# dependency reuse the result; they do not probe again.
+task CheckDependencies {
+
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    $psVersion = $PSVersionTable.PSVersion
+    if ($psVersion -lt [version]'7.4') {
+        $failures.Add("PowerShell 7.4+ is required. This session is $psVersion. Install pwsh 7.4 or later and rerun.")
+    }
+    else {
+        Write-Host "OK  PowerShell $psVersion" -ForegroundColor Green
+    }
+
+    $terraform = Get-Command terraform -ErrorAction SilentlyContinue
+    if (-not $terraform) {
+        $failures.Add("terraform is not on PATH. Install Terraform and ensure `terraform version` works.")
+    }
+    else {
+        $tfOut = & terraform version 2>&1 | Out-String
+        if ($LASTEXITCODE -ne 0) {
+            $failures.Add("terraform was found but `terraform version` failed:`n$tfOut")
+        }
+        else {
+            $tfLine = ($tfOut -split "`r?`n" | Where-Object { $_ } | Select-Object -First 1)
+            Write-Host "OK  $tfLine ($($terraform.Source))" -ForegroundColor Green
+        }
+    }
+
+    $docker = Get-Command docker -ErrorAction SilentlyContinue
+    if (-not $docker) {
+        $failures.Add("docker is not on PATH. Install Docker Desktop (or the Docker CLI) and ensure `docker version` works.")
+    }
+    else {
+        Write-Host "OK  docker CLI ($($docker.Source))" -ForegroundColor Green
+
+        $null = & docker info --format '{{.ServerVersion}}' 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            $infoOut = & docker info 2>&1 | Out-String
+            $failures.Add("Docker CLI is present but the Docker engine is not running. Start Docker Desktop and wait until it is ready.`n$infoOut")
+        }
+        else {
+            Write-Host "OK  Docker engine is up" -ForegroundColor Green
+        }
+    }
+
+    if ($failures.Count -gt 0) {
+        throw (@('CheckDependencies failed:', $failures) -join "`n - ")
+    }
+
+}
+
+task BuildDLL CheckDependencies, {
 
     $libDirectory = Join-Path $PSScriptRoot "src\TerraformAST\lib"
     $libPath      = Join-Path $libDirectory "TerraformAST.dll"
@@ -100,7 +152,7 @@ task ImportModule {
     Import-Module $modulePath -Force -ErrorAction Stop
 }
 
-task Test RemoveModule,ImportModule, {
+task Test CheckDependencies, RemoveModule, ImportModule, {
 
     $pesterPath = Join-Path $PSScriptRoot "tests"
     $testFiles  = Get-ChildItem -Path $pesterPath -Filter "*.Tests.ps1" -Recurse -ErrorAction SilentlyContinue
