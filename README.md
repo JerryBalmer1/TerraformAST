@@ -79,21 +79,66 @@ Get-TerraformAST -FilePath .\infra\main.tf
 
 ### Shape of a variable block
 
-Each object in the pipeline is one HCL block. A `variable` looks like this:
+Each pipeline object is one HCL block from HashiCorp HCL v2. Besides `Type` and `Labels`, the object keeps the source map: file name, line, column, and byte offset on the type, each label, and both braces.
 
 ```powershell
-Get-TerraformAST -Path .\infra |
+Get-TerraformAST -FilePath .\infra\variables.tf |
     Where-Object { $_.Type -eq 'variable' -and $_.Labels -contains 'aws_region' } |
     Select-Object -First 1 |
-    Format-List
+    Format-List *
 ```
 
 ```text
-Type   : variable
-Labels : {aws_region}
+Type            : variable
+Labels          : {aws_region}
+Body            : @{Attributes=System.Collections.Hashtable; Blocks=System.Object[]}
+TypeRange       : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}
+LabelRanges     : {@{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}}
+OpenBraceRange  : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}
+CloseBraceRange : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}
 ```
 
-The block body sits on `.Body` — attributes (`type`, `description`, `default`) and any nested blocks. Same shape for `resource`, `module`, `output`, and the rest: **`Type`** + **`Labels`** + **`Body`**.
+`Format-List` collapses nested range objects. Pull the coordinates off the properties:
+
+```powershell
+$block = Get-TerraformAST -FilePath .\infra\variables.tf |
+    Where-Object { $_.Type -eq 'variable' -and $_.Labels -contains 'aws_region' } |
+    Select-Object -First 1
+
+$block.TypeRange.Start | Format-List Line, Column, Byte
+$block.TypeRange.End   | Format-List Line, Column, Byte
+```
+
+```text
+Line   : 1
+Column : 1
+Byte   : 0
+
+Line   : 1
+Column : 9
+Byte   : 8
+```
+
+`variable` on line 1 of `infra/variables.tf` is columns 1–8; the label `aws_region` is in `$block.LabelRanges[0]`. Same pattern on every block type (`resource`, `module`, `output`, …): **`Type`**, **`Labels`**, **`Body`**, plus **`TypeRange` / `LabelRanges` / `OpenBraceRange` / `CloseBraceRange`**.
+
+```powershell
+# Line of every root block under .\infra
+Get-TerraformAST -Path .\infra |
+    Select-Object Type,
+                  @{ n = 'Name'; l = { $_.Labels -join '.' } },
+                  @{ n = 'Line'; l = { $_.TypeRange.Start.Line } },
+                  @{ n = 'File'; l = { Split-Path $_.TypeRange.Filename -Leaf } }
+```
+
+```text
+Type      Name              Line File
+----      ----              ---- ----
+terraform                      1 main.tf
+provider  null                 1 main.tf
+variable  aws_region           1 variables.tf
+variable  instance_count       7 variables.tf
+output    region               1 outputs.tf
+```
 
 ```powershell
 # Types present at the root of .\infra (no -Recurse)
