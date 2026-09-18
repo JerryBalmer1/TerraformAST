@@ -85,7 +85,7 @@ Each object in the pipeline is one HCL block. A `variable` looks like this:
 Get-TerraformAST -Path .\infra |
     Where-Object { $_.Type -eq 'variable' -and $_.Labels -contains 'aws_region' } |
     Select-Object -First 1 |
-    Format-List Type, Labels
+    Format-List
 ```
 
 ```text
