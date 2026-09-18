@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <sub><a href="https://github.com/kyechan99/capsule-render">Above was created by capsule-render</a></sub>
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/PowerShell-7.4%2B-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell 7.4+" />
   <img src="https://img.shields.io/badge/Pester-6.1%2B-0078D4?style=for-the-badge" alt="Pester 6.1+" />
   <img src="https://img.shields.io/badge/HCL-v2-844FBA?style=for-the-badge" alt="HashiCorp HCL v2" />
   <a href="https://www.powershellgallery.com/packages/TerraformAST"><img src="https://img.shields.io/powershellgallery/v/TerraformAST?style=for-the-badge&label=Gallery" alt="PowerShell Gallery" /></a>
+</p>
+
+<p align="center">
+  <sub><a href="https://github.com/kyechan99/capsule-render">Above was created by capsule-render</a></sub>
 </p>
 
 PowerShell module that parses Terraform `.tf` files into an HCL abstract syntax tree.
