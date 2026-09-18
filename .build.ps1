@@ -39,8 +39,6 @@ if (-not (Get-Module -ListAvailable -Name InvokeBuild)) {
 # InvokeBuild - Tasks
 ######################################################################################################
 
-task Clean {}
-
 # Runs at most once per Invoke-Build invocation. Later tasks that list it as a
 # dependency reuse the result; they do not probe again.
 task CheckDependencies {
