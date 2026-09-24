@@ -37,7 +37,6 @@ Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` 
 
 ## Downloads & Links
 
-- [Get the latest published build](https://www.powershellgallery.com/packages/TerraformAST/1.0.1)
 - Homepage: https://github.com/JerryBalmer1/TerraformAST
 - Gallery: https://www.powershellgallery.com/packages/TerraformAST
 - Parser library: https://github.com/hashicorp/hcl
