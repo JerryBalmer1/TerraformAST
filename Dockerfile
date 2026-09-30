@@ -19,15 +19,15 @@ ENV CGO_ENABLED=1 \
     CC=x86_64-w64-mingw32-gcc \
     CXX=x86_64-w64-mingw32-g++
 
-RUN mkdir -p /app/src/TerraformAST/lib && \
+RUN mkdir -p /app/src/TerraformTools/lib && \
     cd ./src/go && \
     sed -i '/^go /d' go.mod && \
     go mod tidy && \
-    go build -o "/app/src/TerraformAST/lib/TerraformAST.dll" -buildmode=c-shared .
+    go build -o "/app/src/TerraformTools/lib/TerraformTools.dll" -buildmode=c-shared .
 
 FROM mcr.microsoft.com/powershell:latest
 
-COPY --from=builder /app/src/TerraformAST/lib/TerraformAST.dll /TerraformAST.dll
+COPY --from=builder /app/src/TerraformTools/lib/TerraformTools.dll /TerraformTools.dll
 
 ENTRYPOINT ["pwsh"]
 

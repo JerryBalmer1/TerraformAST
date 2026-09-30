@@ -1,4 +1,4 @@
-$dllPath = Join-Path $PSScriptRoot "lib\TerraformAST.dll"
+$dllPath = Join-Path $PSScriptRoot "lib\TerraformTools.dll"
 if (-not (Test-Path $dllPath)) {
     throw "DLL not found: $dllPath"
 }
@@ -11,18 +11,18 @@ $signature = @"
     public static extern void FreeString(IntPtr str);
 "@
 
-$typeName = 'TerraformAST.HCLParser'
+$typeName = 'TerraformTools.HCLParser'
 $alreadyLoaded = [AppDomain]::CurrentDomain.GetAssemblies() |
     ForEach-Object { try { $_.GetType($typeName, $false, $false) } catch { $null } } |
     Where-Object { $_ }
 
 if (-not $alreadyLoaded) {
-    Add-Type -MemberDefinition $signature -Name HCLParser -Namespace TerraformAST
+    Add-Type -MemberDefinition $signature -Name HCLParser -Namespace TerraformTools
 }
 
 # Default view: Type, Name, Line, Column, File.
 # Everything else is still on the object — use Format-List * or Select-Object *.
-$blockTypeName = 'TerraformAST.Block'
+$blockTypeName = 'TerraformTools.Block'
 Update-TypeData -TypeName $blockTypeName -DefaultDisplayPropertySet Type, Name, Line, Column, File -Force
 Update-TypeData -TypeName $blockTypeName -MemberType ScriptProperty -MemberName Name -Value {
     if ($this.Labels) { $this.Labels -join '.' }
@@ -39,9 +39,9 @@ Update-TypeData -TypeName $blockTypeName -MemberType ScriptProperty -MemberName 
     }
 } -Force
 
-function ConvertTo-TerraformAstBlock {
+function ConvertTo-TerraformToolsBlock {
     param($Block)
-    $Block.PSObject.TypeNames.Insert(0, 'TerraformAST.Block')
+    $Block.PSObject.TypeNames.Insert(0, 'TerraformTools.Block')
     $Block
 }
 
@@ -51,12 +51,12 @@ function ConvertFrom-TerraformHclFile {
         Parses one Terraform .tf file through the native HCL DLL and emits its blocks.
 
     .DESCRIPTION
-        ConvertFrom-TerraformHclFile is the single-file parser used by Get-TerraformAST.
-        It resolves a literal path, calls ParseHCL on TerraformAST.dll (HashiCorp HCL v2),
+        ConvertFrom-TerraformHclFile is the single-file parser used by Get-TerraformTools.
+        It resolves a literal path, calls ParseHCL on TerraformTools.dll (HashiCorp HCL v2),
         converts the JSON payload to objects, and writes each top-level block from
         Body.Blocks to the pipeline.
 
-        Prefer Get-TerraformAST for directories, recursion, and validation. This function
+        Prefer Get-TerraformTools for directories, recursion, and validation. This function
         assumes the path already exists.
 
     .PARAMETER LiteralPath
@@ -68,23 +68,23 @@ function ConvertFrom-TerraformHclFile {
         Parse one file and emit its HCL blocks.
 
     .EXAMPLE
-        Get-TerraformAST -FilePath .\infra\main.tf
+        Get-TerraformTools -FilePath .\infra\main.tf
 
         Public wrapper that validates the path, then calls this function.
 
     .OUTPUTS
-        TerraformAST.Block. Default view is Type, Name, Line, Column, File.
+        TerraformTools.Block. Default view is Type, Name, Line, Column, File.
         TypeRange, LabelRanges, Body, and brace ranges remain on the object.
 
     .NOTES
-        Not exported. Get-TerraformAST is the supported entry point.
+        Not exported. Get-TerraformTools is the supported entry point.
         Parse failures throw so a 7.4+ agent with ErrorAction Stop can correct them.
 
     .LINK
-        Get-TerraformAST
+        Get-TerraformTools
 
     .LINK
-        https://github.com/JerryBalmer1/TerraformAST
+        https://github.com/JerryBalmer1/TerraformTools
     #>
     [CmdletBinding()]
     param(
@@ -96,7 +96,7 @@ function ConvertFrom-TerraformHclFile {
     $absPath = (Resolve-Path -LiteralPath $LiteralPath -ErrorAction Stop).Path
     Write-Verbose "Parsing $absPath"
 
-    $astJsonPtr = [TerraformAST.HCLParser]::ParseHCL($absPath)
+    $astJsonPtr = [TerraformTools.HCLParser]::ParseHCL($absPath)
     if ($astJsonPtr -eq [IntPtr]::Zero) {
         throw "Failed to parse HCL file: Null pointer returned ($absPath)"
     }
@@ -105,7 +105,7 @@ function ConvertFrom-TerraformHclFile {
         $astJson = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($astJsonPtr)
     }
     finally {
-        [TerraformAST.HCLParser]::FreeString($astJsonPtr)
+        [TerraformTools.HCLParser]::FreeString($astJsonPtr)
     }
 
     if (-not $astJson) {
@@ -123,16 +123,16 @@ function ConvertFrom-TerraformHclFile {
         $ast = $astJson | ConvertFrom-Json -ErrorAction Stop
     }
 
-    $ast.Body.Blocks | ForEach-Object { ConvertTo-TerraformAstBlock -Block $_ }
+    $ast.Body.Blocks | ForEach-Object { ConvertTo-TerraformToolsBlock -Block $_ }
 }
 
-function Get-TerraformAST {
+function Get-TerraformTools {
     <#
     .SYNOPSIS
         Parses Terraform .tf files into an HCL abstract syntax tree.
 
     .DESCRIPTION
-        Get-TerraformAST walks one file or a directory of Terraform configuration and
+        Get-TerraformTools walks one file or a directory of Terraform configuration and
         returns the HCL blocks produced by HashiCorp HCL v2 (the language library
         Terraform uses).
 
@@ -152,33 +152,33 @@ function Get-TerraformAST {
         A single Terraform .tf file.
 
     .EXAMPLE
-        Get-TerraformAST -Path .\infra
+        Get-TerraformTools -Path .\infra
 
         Parse every .tf file in the infra directory (not recursive).
 
     .EXAMPLE
-        Get-TerraformAST -Path .\infra -Recurse
+        Get-TerraformTools -Path .\infra -Recurse
 
         Parse every .tf file under infra, including nested modules.
 
     .EXAMPLE
-        Get-TerraformAST -FilePath .\infra\main.tf
+        Get-TerraformTools -FilePath .\infra\main.tf
 
         Parse one Terraform file.
 
     .EXAMPLE
-        Get-ChildItem .\infra -Filter *.tf | Get-TerraformAST
+        Get-ChildItem .\infra -Filter *.tf | Get-TerraformTools
 
         Pipeline input binds to -FilePath via the FullName alias.
 
     .OUTPUTS
-        TerraformAST.Block
+        TerraformTools.Block
 
     .LINK
-        https://github.com/JerryBalmer1/TerraformAST
+        https://github.com/JerryBalmer1/TerraformTools
 
     .LINK
-        https://www.powershellgallery.com/packages/TerraformAST/1.0.1
+        https://www.powershellgallery.com/packages/TerraformTools/1.0.1
     #>
     [CmdletBinding(DefaultParameterSetName = 'Directory')]
     param(

@@ -2,7 +2,7 @@
 *.dll.old
 *.old
 *.zip
-TerraformAST.zip
+TerraformTools.zip
 
 # Local .terraform directories
 .terraform/

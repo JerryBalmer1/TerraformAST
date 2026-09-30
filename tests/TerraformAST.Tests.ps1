@@ -1,4 +1,4 @@
-Describe "TerraformAST" {
+Describe "TerraformTools" {
 
     BeforeAll {
         $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -9,14 +9,14 @@ Describe "TerraformAST" {
         Set-Variable -Name MainTf   -Value $mainTf   -Scope Script
     }
 
-    Context "Get-TerraformAST" {
+    Context "Get-TerraformTools" {
 
         It "is exported" {
-            Get-Command Get-TerraformAST -ErrorAction Stop | Should -Not -BeNullOrEmpty
+            Get-Command Get-TerraformTools -ErrorAction Stop | Should -Not -BeNullOrEmpty
         }
 
         It "parses infra with -Path" {
-            $ast = @(Get-TerraformAST -Path $Infra -ErrorAction Stop)
+            $ast = @(Get-TerraformTools -Path $Infra -ErrorAction Stop)
             $ast | Should -Not -BeNullOrEmpty
             $ast.Type | Should -Contain "variable"
             $ast.Type | Should -Contain "module"
@@ -24,30 +24,30 @@ Describe "TerraformAST" {
         }
 
         It "parses infra with -Path -Recurse and includes nested modules" {
-            $ast = @(Get-TerraformAST -Path $Infra -Recurse -ErrorAction Stop)
+            $ast = @(Get-TerraformTools -Path $Infra -Recurse -ErrorAction Stop)
             $labels = @($ast | ForEach-Object { $_.Labels })
             $labels | Should -Contain "endpoint"
             $labels | Should -Contain "listener"
         }
 
         It "parses a file with -FilePath" {
-            $ast = @(Get-TerraformAST -FilePath $MainTf -ErrorAction Stop)
+            $ast = @(Get-TerraformTools -FilePath $MainTf -ErrorAction Stop)
             $ast | Should -Not -BeNullOrEmpty
             $ast.Type | Should -Contain "terraform"
         }
 
         It "rejects a missing file" {
-            { Get-TerraformAST -FilePath (Join-Path $RepoRoot "does-not-exist.tf") -ErrorAction Stop } |
+            { Get-TerraformTools -FilePath (Join-Path $RepoRoot "does-not-exist.tf") -ErrorAction Stop } |
                 Should -Throw
         }
 
         It "rejects a non-.tf FilePath" {
-            { Get-TerraformAST -FilePath $PSCommandPath -ErrorAction Stop } |
+            { Get-TerraformTools -FilePath $PSCommandPath -ErrorAction Stop } |
                 Should -Throw
         }
 
         It "rejects a missing directory" {
-            { Get-TerraformAST -Path (Join-Path $RepoRoot "does-not-exist-dir") -ErrorAction Stop } |
+            { Get-TerraformTools -Path (Join-Path $RepoRoot "does-not-exist-dir") -ErrorAction Stop } |
                 Should -Throw
         }
     }
@@ -55,7 +55,7 @@ Describe "TerraformAST" {
     Context "block types in infra" {
 
         BeforeAll {
-            $blocks = @(Get-TerraformAST -Path $Infra -ErrorAction Stop)
+            $blocks = @(Get-TerraformTools -Path $Infra -ErrorAction Stop)
             Set-Variable -Name Blocks -Value $blocks -Scope Script
         }
 
@@ -100,7 +100,7 @@ Describe "TerraformAST" {
 
         BeforeAll {
             $names = @(
-                Get-TerraformAST -Path $Infra -ErrorAction Stop |
+                Get-TerraformTools -Path $Infra -ErrorAction Stop |
                     Where-Object Type -eq "variable" |
                     ForEach-Object { $_.Labels[0] }
             )

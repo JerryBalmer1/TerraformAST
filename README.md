@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&height=220&section=header&color=0:1B1030,45:5C4EE5,100:844FBA&text=TerraformAST&fontSize=52&fontColor=FFFFFF&fontAlignY=38&desc=Parse%20.tf%20files%20into%20an%20HCL%20abstract%20syntax%20tree&descSize=16&descAlignY=62&animation=fadeIn" alt="TerraformAST" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=220&section=header&color=0:1B1030,45:5C4EE5,100:844FBA&text=TerraformTools&fontSize=52&fontColor=FFFFFF&fontAlignY=38&desc=Parse%20.tf%20files%20into%20an%20HCL%20abstract%20syntax%20tree&descSize=16&descAlignY=62&animation=fadeIn" alt="TerraformTools" />
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/PowerShell-7.4%2B-5391FE?style=for-the-badge&logo=powershell&logoColor=white" alt="PowerShell 7.4+" />
   <img src="https://img.shields.io/badge/Pester-6.1%2B-0078D4?style=for-the-badge" alt="Pester 6.1+" />
   <img src="https://img.shields.io/badge/HCL-v2-844FBA?style=for-the-badge" alt="HashiCorp HCL v2" />
-  <a href="https://www.powershellgallery.com/packages/TerraformAST"><img src="https://img.shields.io/powershellgallery/v/TerraformAST?style=for-the-badge&label=Gallery" alt="PowerShell Gallery" /></a>
+  <a href="https://www.powershellgallery.com/packages/TerraformTools"><img src="https://img.shields.io/powershellgallery/v/TerraformTools?style=for-the-badge&label=Gallery" alt="PowerShell Gallery" /></a>
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@ PowerShell module that parses Terraform `.tf` files into an HCL abstract syntax 
 
 There was no Terraform AST cmdlet I could drop into a pipeline, so this module exists. The native parser is a `c-shared` DLL built from [HashiCorp HCL v2](https://github.com/hashicorp/hcl) — the same language library Terraform uses — not from the `hashicorp/terraform` application repository.
 
-Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` file). Gallery listing still at [TerraformAST 1.0.1](https://www.powershellgallery.com/packages/TerraformAST/1.0.1) until 2.0.0 is published.
+Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` file). Gallery listing still at [TerraformTools 1.0.1](https://www.powershellgallery.com/packages/TerraformTools/1.0.1) until 2.0.0 is published.
 
 ---
 
@@ -33,12 +33,12 @@ Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` 
 
 - Grab the latest build from the PowerShell Gallery (or clone this repo).
 - Install for your user account — no admin required.
-- Import the module and point `Get-TerraformAST` at `infra` or a `.tf` file.
+- Import the module and point `Get-TerraformTools` at `infra` or a `.tf` file.
 
 ## Downloads & Links
 
-- Homepage: https://github.com/JerryBalmer1/TerraformAST
-- Gallery: https://www.powershellgallery.com/packages/TerraformAST
+- Homepage: https://github.com/JerryBalmer1/TerraformTools
+- Gallery: https://www.powershellgallery.com/packages/TerraformTools
 - Parser library: https://github.com/hashicorp/hcl
 
 ---
@@ -46,8 +46,8 @@ Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` 
 ## Install
 
 ```powershell
-Install-Module -Name TerraformAST -Scope CurrentUser
-Import-Module TerraformAST
+Install-Module -Name TerraformTools -Scope CurrentUser
+Import-Module TerraformTools
 ```
 
 ## Examples
@@ -56,10 +56,10 @@ The repo ships an `infra/` fixture: a root module, a `network` child module, and
 
 ### Directory (`-Path`)
 
-Parse `.tf` files in one folder. Subfolders are skipped. The default view is `Type`, `Name`, `Line`, `Column`, and `File` — set with `DefaultDisplayPropertySet` on `TerraformAST.Block`.
+Parse `.tf` files in one folder. Subfolders are skipped. The default view is `Type`, `Name`, `Line`, `Column`, and `File` — set with `DefaultDisplayPropertySet` on `TerraformTools.Block`.
 
 ```powershell
-Get-TerraformAST -Path .\infra
+Get-TerraformTools -Path .\infra
 ```
 
 ```text
@@ -77,13 +77,13 @@ output    region                  1      1 outputs.tf
 Include nested modules and child directories.
 
 ```powershell
-Get-TerraformAST -Path .\infra -Recurse
+Get-TerraformTools -Path .\infra -Recurse
 ```
 
 ### Single file (`-FilePath`)
 
 ```powershell
-Get-TerraformAST -FilePath .\infra\main.tf
+Get-TerraformTools -FilePath .\infra\main.tf
 ```
 
 ### Full object
@@ -91,7 +91,7 @@ Get-TerraformAST -FilePath .\infra\main.tf
 Ranges and `Body` are still on the object. `Format-List *` is the long view:
 
 ```powershell
-Get-TerraformAST -FilePath .\infra\variables.tf |
+Get-TerraformTools -FilePath .\infra\variables.tf |
     Where-Object Name -eq 'aws_region' |
     Select-Object -First 1 |
     Format-List *
@@ -105,16 +105,16 @@ File            : variables.tf
 Type            : variable
 Labels          : {aws_region}
 Body            : @{Attributes=System.Collections.Hashtable; Blocks=System.Object[]}
-TypeRange       : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}
-LabelRanges     : {@{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}}
-OpenBraceRange  : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}
-CloseBraceRange : @{Filename=C:\__Code\TerraformAST\infra\variables.tf; Start=; End=}
+TypeRange       : @{Filename=C:\__Code\TerraformTools\infra\variables.tf; Start=; End=}
+LabelRanges     : {@{Filename=C:\__Code\TerraformTools\infra\variables.tf; Start=; End=}}
+OpenBraceRange  : @{Filename=C:\__Code\TerraformTools\infra\variables.tf; Start=; End=}
+CloseBraceRange : @{Filename=C:\__Code\TerraformTools\infra\variables.tf; Start=; End=}
 ```
 
 `$block.TypeRange.Start.Line` is the same value as `$block.Line`. Types at the root of `.\infra`:
 
 ```powershell
-Get-TerraformAST -Path .\infra |
+Get-TerraformTools -Path .\infra |
     Select-Object -ExpandProperty Type -Unique
 ```
 
@@ -134,7 +134,7 @@ check
 
 ## Build the DLL (contributors)
 
-If `TerraformAST.dll` is already loaded in this PowerShell process, Windows will refuse to delete it. `BuildDLL` unloads the module first and, if the file is still locked, renames it to `TerraformAST.dll.old` before writing the new one. A brand-new `pwsh` session is still the cleanest option.
+If `TerraformTools.dll` is already loaded in this PowerShell process, Windows will refuse to delete it. `BuildDLL` unloads the module first and, if the file is still locked, renames it to `TerraformTools.dll.old` before writing the new one. A brand-new `pwsh` session is still the cleanest option.
 
 ```powershell
 Invoke-Build CheckDependencies
@@ -142,12 +142,12 @@ Invoke-Build BuildDLL
 Invoke-Build
 ```
 
-`BuildDLL` cross-compiles `src/go` with `github.com/hashicorp/hcl/v2` and copies `TerraformAST.dll` into `src/TerraformAST/lib/`.
+`BuildDLL` cross-compiles `src/go` with `github.com/hashicorp/hcl/v2` and copies `TerraformTools.dll` into `src/TerraformTools/lib/`.
 
 ## Disclaimer
 
 This project is independent. It is not affiliated with HashiCorp.
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:844FBA,55:5C4EE5,100:1B1030&text=Get-TerraformAST&fontSize=28&fontColor=FFFFFF&fontAlignY=70&animation=fadeIn" alt="" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:844FBA,55:5C4EE5,100:1B1030&text=Get-TerraformTools&fontSize=28&fontColor=FFFFFF&fontAlignY=70&animation=fadeIn" alt="" />
 </p>

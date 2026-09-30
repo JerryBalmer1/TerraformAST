@@ -70,7 +70,7 @@ function Invoke-Git {
 }
 
 function Get-ModuleManifestPath {
-    Join-Path $PSScriptRoot "src\TerraformAST\TerraformAST.psd1"
+    Join-Path $PSScriptRoot "src\TerraformTools\TerraformTools.psd1"
 }
 
 function Get-ManifestVersion {
@@ -220,16 +220,16 @@ task CheckDependencies {
 
 task BuildDLL CheckDependencies, {
 
-    $libDirectory = Join-Path $PSScriptRoot "src\TerraformAST\lib"
-    $libPath      = Join-Path $libDirectory "TerraformAST.dll"
-    $imageName    = "terraformast"
-    $containerName = "terraformast-tmp"
+    $libDirectory = Join-Path $PSScriptRoot "src\TerraformTools\lib"
+    $libPath      = Join-Path $libDirectory "TerraformTools.dll"
+    $imageName    = "TerraformTools"
+    $containerName = "TerraformTools-tmp"
 
     if (-not (Test-Path $libDirectory)) {
         New-Item -Path $libDirectory -ItemType Directory -Force -ErrorAction Stop | Out-Null
     }
 
-    Remove-Module -Name TerraformAST -Force -ErrorAction SilentlyContinue
+    Remove-Module -Name TerraformTools -Force -ErrorAction SilentlyContinue
 
     if (Test-Path -LiteralPath $libPath) {
         try {
@@ -257,7 +257,7 @@ task BuildDLL CheckDependencies, {
         throw "docker create failed with exit code $LASTEXITCODE"
     }
 
-    docker cp "${containerName}:/TerraformAST.dll" $libPath
+    docker cp "${containerName}:/TerraformTools.dll" $libPath
     if ($LASTEXITCODE -ne 0) {
         docker rm -f $containerName 2>$null | Out-Null
         throw "docker cp failed with exit code $LASTEXITCODE"
@@ -272,11 +272,11 @@ task BuildDLL CheckDependencies, {
 }
 
 task RemoveModule {
-    Remove-Module -Name TerraformAST -Force -ErrorAction SilentlyContinue
+    Remove-Module -Name TerraformTools -Force -ErrorAction SilentlyContinue
 }
 
 task ImportModule {
-    $modulePath = Join-Path $PSScriptRoot "src\TerraformAST"
+    $modulePath = Join-Path $PSScriptRoot "src\TerraformTools"
     Import-Module $modulePath -Force -ErrorAction Stop
 }
 
@@ -298,8 +298,8 @@ task Test CheckDependencies, RemoveModule, ImportModule, {
 }
 
 task Package {
-    $zipPath = Join-Path $PSScriptRoot "TerraformAST.zip"
-    Compress-Archive -Path "$PSScriptRoot/src/TerraformAST/*" -DestinationPath $zipPath -Force
+    $zipPath = Join-Path $PSScriptRoot "TerraformTools.zip"
+    Compress-Archive -Path "$PSScriptRoot/src/TerraformTools/*" -DestinationPath $zipPath -Force
     Write-Host "Module packaged successfully: $zipPath" -ForegroundColor Green
 }
 
@@ -347,10 +347,10 @@ task Publish {
         throw "Publish must run on main. Current branch is '$branch'. Checkout main after Release."
     }
 
-    $libDir  = Join-Path $PSScriptRoot "src\TerraformAST\lib"
-    $libPath = Join-Path $libDir "TerraformAST.dll"
+    $libDir  = Join-Path $PSScriptRoot "src\TerraformTools\lib"
+    $libPath = Join-Path $libDir "TerraformTools.dll"
     if (-not (Test-Path -LiteralPath $libPath)) {
-        throw "TerraformAST.dll is missing. Run Invoke-Build BuildDLL before Publish (the DLL is gitignored)."
+        throw "TerraformTools.dll is missing. Run Invoke-Build BuildDLL before Publish (the DLL is gitignored)."
     }
 
     Get-ChildItem -LiteralPath $libDir -Filter '*.old' -ErrorAction SilentlyContinue |
@@ -368,11 +368,11 @@ task Publish {
         Write-Host "Using existing PSGALLERY_API_KEY from the environment." -ForegroundColor Yellow
     }
 
-    $modulePath = Join-Path $PSScriptRoot "src\TerraformAST"
+    $modulePath = Join-Path $PSScriptRoot "src\TerraformTools"
     $version    = Get-ManifestVersion
 
     Publish-Module -Path $modulePath -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -ErrorAction Stop
-    Write-Host "Published TerraformAST $version to the PowerShell Gallery." -ForegroundColor Green
+    Write-Host "Published TerraformTools $version to the PowerShell Gallery." -ForegroundColor Green
 }
 
 task . Test
