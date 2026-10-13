@@ -36,3 +36,6 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Local history-rewrite workspace (filter-repo message map)
+.git-rewrite/

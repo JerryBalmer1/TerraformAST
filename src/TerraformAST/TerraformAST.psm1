@@ -178,7 +178,7 @@ function Get-TerraformAST {
         https://github.com/JerryBalmer1/TerraformAST
 
     .LINK
-        https://www.powershellgallery.com/packages/TerraformAST/1.0.1
+        https://www.powershellgallery.com/packages/TerraformAST
     #>
     [CmdletBinding(DefaultParameterSetName = 'Directory')]
     param(

@@ -19,7 +19,7 @@ PowerShell module that parses Terraform `.tf` files into an HCL abstract syntax 
 
 There was no Terraform AST cmdlet I could drop into a pipeline, so this module exists. The native parser is a `c-shared` DLL built from [HashiCorp HCL v2](https://github.com/hashicorp/hcl) — the same language library Terraform uses — not from the `hashicorp/terraform` application repository.
 
-Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` file). Gallery listing still at [TerraformAST 1.0.1](https://www.powershellgallery.com/packages/TerraformAST/1.0.1) until 2.0.0 is published.
+Source version **2.0.0** (`-Path` is a directory; `-FilePath` is a single `.tf` file). Published on the [PowerShell Gallery](https://www.powershellgallery.com/packages/TerraformAST): `Install-Module -Name TerraformAST` or `Install-PSResource -Name TerraformAST`.
 
 ---
 
